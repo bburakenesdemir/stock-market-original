@@ -17,7 +17,7 @@ spring:
     url: jdbc:mysql://localhost:3306/stock-market?serverTimezone=UTC
     driver-class-name: com.mysql.jdbc.Driver
     username: root
-    password: Burak1996!
+    password: root
 
   mail:
     host: smtp.gmail.com
@@ -37,6 +37,7 @@ stock-market:
   nodejs:
     twitter:
       uri: "http://localhost:4321/"
+      mock-service: "http://localhost:3409/mock/get-tweets"
   redis:
     docker:
       host: "localhost"

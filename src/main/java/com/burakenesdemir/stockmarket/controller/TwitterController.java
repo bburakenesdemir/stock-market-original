@@ -2,7 +2,7 @@ package com.burakenesdemir.stockmarket.controller;
 
 import com.burakenesdemir.stockmarket.resource.TweetResource;
 import com.burakenesdemir.stockmarket.service.TwitterService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/twitter")
+@AllArgsConstructor
 public class TwitterController {
 
-    @Autowired
-    TwitterService twitterService;
+    private final TwitterService twitterService;
 
     @GetMapping(value = "/get-tweets/hashtag/{hashtag}/scroll-size/{scrollSize}")
     public List<TweetResource> getTweets(@PathVariable String hashtag,
@@ -21,8 +21,13 @@ public class TwitterController {
         return twitterService.getTweetsByHashtag(hashtag, scrollSize);
     }
 
+    @GetMapping(value = "/get-all/hashtag/{hashtag}")
+    public List<TweetResource> getAll(@PathVariable String hashtag) {
+        return twitterService.getAll(hashtag);
+    }
+
     @PostMapping(value = "/clear-cache")
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(cron = "*/5 * * * *")
     public void clearCache(){
         twitterService.clearCache();
     }

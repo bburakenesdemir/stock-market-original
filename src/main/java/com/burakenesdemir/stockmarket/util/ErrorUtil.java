@@ -11,5 +11,6 @@ public class ErrorUtil {
     public static final String USER_NOT_FOUND_ERROR = "Kullanıcı bulunamadı!!";
     public static final String USER_KEY_NOT_NULL_OR_EMPTHY = "Geçersiz Key Girildi";
     public static final String TWITTER_API_ERROR = "Twitter ile iletişim kurulamıyor!";
+    public static final String NOT_FOUND_TWEET = "İlgili hashtag ile kayıtlı tweet bulunamadı!";
 
 }
