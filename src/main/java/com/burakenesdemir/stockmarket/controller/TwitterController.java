@@ -3,7 +3,6 @@ package com.burakenesdemir.stockmarket.controller;
 import com.burakenesdemir.stockmarket.resource.TweetResource;
 import com.burakenesdemir.stockmarket.service.TwitterService;
 import lombok.AllArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,11 +23,5 @@ public class TwitterController {
     @GetMapping(value = "/get-all/hashtag/{hashtag}")
     public List<TweetResource> getAll(@PathVariable String hashtag) {
         return twitterService.getAll(hashtag);
-    }
-
-    @PostMapping(value = "/clear-cache")
-    @Scheduled(cron = "*/5 * * * *")
-    public void clearCache(){
-        twitterService.clearCache();
     }
 }

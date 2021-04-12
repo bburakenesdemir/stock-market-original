@@ -6,6 +6,7 @@ import lombok.Data;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Data
@@ -34,4 +35,6 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     public UserStatus userStatus = UserStatus.NEW;
+
+    String lastHashTag;
 }

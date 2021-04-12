@@ -63,7 +63,7 @@ public class AuthenticationService {
                 .claim("name", user.getName())
                 .claim("surname", user.getSurname())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 600000))
+                .setExpiration(new Date(System.currentTimeMillis() + 60000000))
                 .signWith(SignatureAlgorithm.HS512, SecurityConstants.SECRET).compact();
     }
 }

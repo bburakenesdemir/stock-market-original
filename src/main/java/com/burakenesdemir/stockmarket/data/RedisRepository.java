@@ -8,8 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Map;
 
-import static com.burakenesdemir.stockmarket.util.RedisUtil.REDIS_TOPIC_NAME;
-
 @Repository
 public class RedisRepository {
 

@@ -4,4 +4,5 @@ public interface SecurityConstants {
     String SECRET = "xHB}uk(LW3$GMj=";
     String TOKEN_PREFIX = "Bearer ";
     String HEADER_AUTHORIZATION = "Authorization";
+    String BASIC_AUTH_PREFIX = "Basic ";
 }
