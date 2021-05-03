@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.*;
 
 import static com.burakenesdemir.stockmarket.util.ErrorUtil.*;
@@ -30,6 +31,7 @@ public class TwitterService {
     private final SecurityService securityService;
     private final UserRepository userRepository;
     private final TransactionRecordRepository transactionRepository;
+    private final AnalyzeService analyzeService;
 
     public List<TweetResource> getTweetsByHashtag(String hashtag, Integer scrollSize) {
         List<TweetResource> tweetList;
@@ -40,21 +42,17 @@ public class TwitterService {
                 Date date = new Date();
                 TransactionRecord transactionRecord = transactionRepository.getTransactionRecordByHashtag(hashtag);
 
-                    if (DateUtils.addMinutes(transactionRecord.getSearchTime(), 5).after(date)) {
-                        return redisRepository.findAll(hashtag); //TODO NLP'DE KULLANILACAK.
-                    } else {
-                        clearCache(hashtag);
-                        tweetList = scrapingTwitter(hashtag, scrollSize);
-                        MapUtils.populateMap(map, tweetList, TweetResource::getId);
-                        redisRepository.save(map, hashtag);
-                    }
+                if (DateUtils.addMinutes(transactionRecord.getSearchTime(), 5).after(date)) {
+                    return redisRepository.findAll(hashtag);
+                } else {
+                    clearCache(hashtag);
+                    tweetList = scrapingTwitter(hashtag, scrollSize);
+                    MapUtils.populateMap(map, tweetList, TweetResource::getId);
+                    redisRepository.save(map, hashtag);
+                }
 
             } else {
                 tweetList = scrapingTwitter(hashtag, scrollSize);
-
-                if (tweetList == null) {
-                    throw new BadRequestException(NOT_FOUND_TWEET);
-                }
 
                 MapUtils.populateMap(map, tweetList, TweetResource::getId);
                 redisRepository.save(map, hashtag);
@@ -89,8 +87,22 @@ public class TwitterService {
         userRepository.save(user);
 
         saveTransactionRecord(hashtag);
+        List<TweetResource> processedTweetList = tweetResponse.getBody();
 
-        return tweetResponse.getBody();
+        if (processedTweetList == null) {
+            throw new BadRequestException(NOT_FOUND_TWEET);
+        }
+
+        cleanTweets(processedTweetList)
+                .forEach(tweet -> {
+                    try {
+                        tweet.setSentiment(analyzeService.sentimentAnalyzeTweet(tweet));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        return processedTweetList;
     }
 
     private void saveTransactionRecord(String hashtag) {
@@ -100,7 +112,7 @@ public class TwitterService {
         if (currentTransaction != null) {
             currentTransaction.setSearchTime(new Date());
             transactionRepository.save(currentTransaction);
-        }else{
+        } else {
             newTransaction.setHashtag(hashtag);
             newTransaction.setSearchTime(new Date());
             transactionRepository.save(newTransaction);
@@ -123,4 +135,19 @@ public class TwitterService {
         }
         return user;
     }
+
+    private List<TweetResource> cleanTweets(List<TweetResource> tweetResource) {
+        tweetResource.forEach(tweet -> tweet.setText(tweet.getText().trim()
+                // remove links
+                .replace("http.*?[\\S]+", "")
+                // remove usernames
+                .replace("@[\\S]+", "")
+                // replace hashtags by just words
+                .replace("#", "")
+                // correct all multiple white spaces to a single white space
+                .replace("[\\s]+", " ")));
+
+        return tweetResource;
+    }
 }
+

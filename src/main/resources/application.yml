@@ -14,10 +14,10 @@ spring:
       hibernate:
         format_sql: true
   datasource:
-    url: jdbc:mysql://localhost:3306/stock-market?serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/stock-market
     driver-class-name: com.mysql.jdbc.Driver
     username: root
-    password: root
+    password: Burak1996!
 
   mail:
     host: smtp.gmail.com

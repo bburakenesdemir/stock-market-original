@@ -1,10 +1,12 @@
 package com.burakenesdemir.stockmarket.controller;
 
 import com.burakenesdemir.stockmarket.resource.TweetResource;
+import com.burakenesdemir.stockmarket.service.AnalyzeService;
 import com.burakenesdemir.stockmarket.service.TwitterService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -13,6 +15,7 @@ import java.util.List;
 public class TwitterController {
 
     private final TwitterService twitterService;
+    private final AnalyzeService analyzeService;
 
     @GetMapping(value = "/get-tweets/hashtag/{hashtag}/scroll-size/{scrollSize}")
     public List<TweetResource> getTweets(@PathVariable String hashtag,
@@ -23,5 +26,10 @@ public class TwitterController {
     @GetMapping(value = "/get-all/hashtag/{hashtag}")
     public List<TweetResource> getAll(@PathVariable String hashtag) {
         return twitterService.getAll(hashtag);
+    }
+
+    @GetMapping(value = "/sentiment")
+    public void sentimentAnalysis() throws IOException {
+        analyzeService.sentimentAnalyzeTweet(null);
     }
 }
