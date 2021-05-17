@@ -22,5 +22,5 @@ public class TweetResource implements Serializable {
     private String time;
 
     @JsonProperty("sentiment")
-    private Integer sentiment;
+    private Float sentiment;
 }

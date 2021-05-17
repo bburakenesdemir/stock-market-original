@@ -1,44 +1,42 @@
 package com.burakenesdemir.stockmarket.service;
 
+import com.burakenesdemir.stockmarket.dto.SentimentRequest;
+import com.burakenesdemir.stockmarket.resource.AnalyzeSentimentResponse;
+import com.burakenesdemir.stockmarket.resource.Document;
 import com.burakenesdemir.stockmarket.resource.TweetResource;
-import com.google.cloud.language.v1.AnalyzeSentimentResponse;
-import com.google.cloud.language.v1.Document;
-import com.google.cloud.language.v1.Document.Type;
-import com.google.cloud.language.v1.LanguageServiceClient;
-import com.google.cloud.language.v1.Sentiment;
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.neural.rnn.RNNCoreAnnotations;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreDocument;
-import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.sentiment.SentimentCoreAnnotations;
-import edu.stanford.nlp.trees.Tree;
-import edu.stanford.nlp.util.CoreMap;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.util.List;
 
 @Service
 public class AnalyzeService {
 
-    public Integer sentimentAnalyzeTweet(TweetResource tweetResource) throws IOException {
+    public List<TweetResource> sentimentAnalyzeTweet(List<TweetResource> processedTweetList) {
+        RestTemplate restTemplate = new RestTemplate();
+        SentimentRequest request = new SentimentRequest();
+        Document document = new Document();
+        String url = "https://language.googleapis.com/v1beta2/documents:analyzeSentiment?key=AIzaSyA_6gAVSsa3vgWZlHeTRodsDQ6x7-bQxqU";
 
+        for(TweetResource tweet : processedTweetList){
+            document.setLanguage("EN");
+            document.setContent(tweet.getText());
+            document.setType("PLAIN_TEXT");
 
-            String text = "Good!";
-            try{
-                analyze();
-                //analyzeSentimentText(text);
-            }catch (Exception ex){
-                ex.printStackTrace();
-            }
+            request.setDocument(document);
+            request.setEncodingType("UTF8");
 
+            ResponseEntity<AnalyzeSentimentResponse> responseEntity = restTemplate.postForEntity(url, request, AnalyzeSentimentResponse.class);
 
-        return 0;
+            tweet.setSentiment(responseEntity.getBody().getDocumentSentiment().getScore());
+        }
+
+        return processedTweetList;
     }
 
-    /** Identifies the sentiment in the string {@code text}. */
+    /*
+
     public static Sentiment analyzeSentimentText(String text) throws Exception {
         // [START language_sentiment_text]
         // Instantiate the Language client com.google.cloud.language.v1.LanguageServiceClient
@@ -58,14 +56,16 @@ public class AnalyzeService {
     }
 
     public void analyze(){
-
         StanfordCoreNLP pipeline = Pipeline.getPipeline();
-        Annotation annotation = pipeline.process("Hello this is John. I don`t like this place.");
+        Annotation annotation = pipeline.process("I don`t like this place.");
         for (CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
             Tree tree = sentence.get(SentimentCoreAnnotations.SentimentAnnotatedTree.class);
             System.out.println(RNNCoreAnnotations.getPredictedClass(tree));
         }
 
     }
+    */
+
+
 }
 

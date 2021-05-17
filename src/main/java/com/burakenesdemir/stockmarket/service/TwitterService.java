@@ -63,6 +63,9 @@ public class TwitterService {
         return tweetList;
     }
 
+
+
+
     /**
      * @param hashtag search key in twitter
      * @return Hashtag been searched before?
@@ -73,7 +76,7 @@ public class TwitterService {
 
     private List<TweetResource> scrapingTwitter(String hashtag, Integer scrollSize) {
         RestTemplate restTemplate = new RestTemplate();
-        String resourceUrl = ConfigLoaderUtil.getProperty("stock-market.nodejs.twitter.uri") + "query?query=" + hashtag + "&scroll=" + scrollSize;
+        String resourceUrl = ConfigLoaderUtil.getProperty("stock-market.nodejs.twitter.uri") + "query-short?query=" + hashtag + "&scroll=" + scrollSize;
         ResponseEntity<List<TweetResource>> tweetResponse;
 
         tweetResponse = restTemplate.exchange(resourceUrl,
@@ -93,14 +96,8 @@ public class TwitterService {
             throw new BadRequestException(NOT_FOUND_TWEET);
         }
 
-        cleanTweets(processedTweetList)
-                .forEach(tweet -> {
-                    try {
-                        tweet.setSentiment(analyzeService.sentimentAnalyzeTweet(tweet));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+
+        processedTweetList = analyzeService.sentimentAnalyzeTweet(cleanTweets(processedTweetList));
 
         return processedTweetList;
     }

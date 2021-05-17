@@ -36,7 +36,7 @@ stock-market:
     reset-password: "/reset-password/"
   nodejs:
     twitter:
-      uri: "http://localhost:4321/"
+      uri: "https://ahmethuseyindok.com/api/twitter/"
       mock-service: "http://localhost:3409/mock/get-tweets"
   redis:
     docker:

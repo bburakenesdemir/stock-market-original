@@ -4,6 +4,7 @@ import com.burakenesdemir.stockmarket.resource.TweetResource;
 import com.burakenesdemir.stockmarket.service.AnalyzeService;
 import com.burakenesdemir.stockmarket.service.TwitterService;
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class TwitterController {
     private final AnalyzeService analyzeService;
 
     @GetMapping(value = "/get-tweets/hashtag/{hashtag}/scroll-size/{scrollSize}")
+    @Transactional
     public List<TweetResource> getTweets(@PathVariable String hashtag,
                                          @PathVariable Integer scrollSize) {
         return twitterService.getTweetsByHashtag(hashtag, scrollSize);
