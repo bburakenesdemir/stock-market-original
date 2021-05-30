@@ -39,11 +39,11 @@ public class ControllerAdvisor extends ResponseEntityExceptionHandler {
     public final ResponseEntity<Object> handleNoDataFoundError
             (NoDataFoundError ex, WebRequest request, HttpServletRequest httpRequest) {
         ErrorResponse dto = new ErrorResponse();
-        dto.setResultCode(HttpStatus.BAD_REQUEST.value());
+        dto.setResultCode(HttpStatus.UNAUTHORIZED.value());
         dto.setErrorMessage(ex.getMessage());
-        dto.setResult(HttpStatus.BAD_REQUEST.name());
+        dto.setResult(HttpStatus.UNAUTHORIZED.name());
         dto.setRequestUrl(httpRequest.getRequestURI());
-        return handleExceptionInternal(ex, dto, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+        return handleExceptionInternal(ex, dto, new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
     }
 
     @ExceptionHandler(BadRequestException.class)

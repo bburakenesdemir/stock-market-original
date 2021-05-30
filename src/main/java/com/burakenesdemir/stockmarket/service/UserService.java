@@ -1,7 +1,5 @@
 package com.burakenesdemir.stockmarket.service;
 
-import com.burakenesdemir.stockmarket.base.data.repository.BaseRepository;
-import com.burakenesdemir.stockmarket.base.service.AbstractEntityService;
 import com.burakenesdemir.stockmarket.controller.UserController;
 import com.burakenesdemir.stockmarket.controller.mapper.UserMapper;
 import com.burakenesdemir.stockmarket.data.User;
@@ -9,6 +7,7 @@ import com.burakenesdemir.stockmarket.data.UserRepository;
 import com.burakenesdemir.stockmarket.dto.UserDto;
 import com.burakenesdemir.stockmarket.exception.BadRequestException;
 import com.burakenesdemir.stockmarket.exception.NoDataFoundError;
+import com.burakenesdemir.stockmarket.security.api.SecurityService;
 import com.burakenesdemir.stockmarket.type.UserStatus;
 import com.burakenesdemir.stockmarket.util.ConfigLoaderUtil;
 import com.burakenesdemir.stockmarket.type.MailAttributes;
@@ -16,7 +15,6 @@ import com.burakenesdemir.stockmarket.util.RandomGenerate;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,18 +26,21 @@ public class UserService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
-    @Autowired
-    UserMapper userMapper;
+    private final UserMapper userMapper;
 
-    @Autowired
-    UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    MailService mailService;
+    private final MailService mailService;
 
-    @Autowired
-    PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
+    private final SecurityService securityService;
+
+    public User getUserInfo(){
+        User user = userRepository.findByUsername(securityService.getUsername());
+
+        return user;
+    }
     public User register(UserDto userDto) {
         User user = userMapper.toEntity(userDto);
 

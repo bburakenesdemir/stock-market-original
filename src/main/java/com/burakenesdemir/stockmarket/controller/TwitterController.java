@@ -1,8 +1,11 @@
 package com.burakenesdemir.stockmarket.controller;
 
+import com.burakenesdemir.stockmarket.data.TransactionRecord;
+import com.burakenesdemir.stockmarket.data.TransactionRecordRepository;
 import com.burakenesdemir.stockmarket.resource.TweetResource;
 import com.burakenesdemir.stockmarket.service.AnalyzeService;
 import com.burakenesdemir.stockmarket.service.TwitterService;
+import com.burakenesdemir.stockmarket.type.enums.CoinEnum;
 import lombok.AllArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -16,13 +19,15 @@ import java.util.List;
 public class TwitterController {
 
     private final TwitterService twitterService;
+
     private final AnalyzeService analyzeService;
 
-    @GetMapping(value = "/get-tweets/hashtag/{hashtag}/scroll-size/{scrollSize}")
+    private final TransactionRecordRepository transactionRecordRepository;
+
+    @GetMapping(value = "/get-tweets")
     @Transactional
-    public List<TweetResource> getTweets(@PathVariable String hashtag,
-                                         @PathVariable Integer scrollSize) {
-        return twitterService.getTweetsByHashtag(hashtag, scrollSize);
+    public List<TweetResource> getTweets(@RequestParam CoinEnum coinEnum) {
+        return twitterService.getTweetsByHashtag(coinEnum);
     }
 
     @GetMapping(value = "/get-all/hashtag/{hashtag}")
@@ -31,7 +36,12 @@ public class TwitterController {
     }
 
     @GetMapping(value = "/sentiment")
-    public void sentimentAnalysis() throws IOException {
+    public void sentimentAnalysis() throws IOException, InterruptedException {
         analyzeService.sentimentAnalyzeTweet(null);
+    }
+
+    @GetMapping(value = "/get-transaction-records")
+    public List<TransactionRecord> getTransactionRecords(){
+        return transactionRecordRepository.findAll();
     }
 }

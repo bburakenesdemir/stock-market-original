@@ -4,6 +4,7 @@ import com.burakenesdemir.stockmarket.data.*;
 import com.burakenesdemir.stockmarket.exception.BadRequestException;
 import com.burakenesdemir.stockmarket.resource.TweetResource;
 import com.burakenesdemir.stockmarket.security.api.SecurityService;
+import com.burakenesdemir.stockmarket.type.enums.CoinEnum;
 import com.burakenesdemir.stockmarket.util.ConfigLoaderUtil;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
@@ -17,8 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.burakenesdemir.stockmarket.util.ErrorUtil.*;
 
@@ -27,43 +30,53 @@ import static com.burakenesdemir.stockmarket.util.ErrorUtil.*;
 public class TwitterService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TwitterService.class);
+
     private final RedisRepository redisRepository;
+
     private final SecurityService securityService;
+
     private final UserRepository userRepository;
+
     private final TransactionRecordRepository transactionRepository;
+
     private final AnalyzeService analyzeService;
 
-    public List<TweetResource> getTweetsByHashtag(String hashtag, Integer scrollSize) {
+    public List<TweetResource> getTweetsByHashtag(CoinEnum coin) {
         List<TweetResource> tweetList;
         Map<String, TweetResource> map = new HashMap<>();
 
         try {
-            if (hashtagControl(hashtag)) {
+            if (hashtagControl(coin.getName())) {
                 Date date = new Date();
-                TransactionRecord transactionRecord = transactionRepository.getTransactionRecordByHashtag(hashtag);
+                TransactionRecord transactionRecord = transactionRepository.getTransactionRecordByHashtag(coin.getName());
 
                 if (DateUtils.addMinutes(transactionRecord.getSearchTime(), 5).after(date)) {
-                    return redisRepository.findAll(hashtag);
+                    transactionRecord.setSearchCount(transactionRecord.getSearchCount() + 1);
+                    transactionRepository.save(transactionRecord);
+                    return redisRepository.findAll(coin.getName());
                 } else {
-                    clearCache(hashtag);
-                    tweetList = scrapingTwitter(hashtag, scrollSize);
+                    clearCache(coin.getName());
+                    tweetList = scrapingTwitter(coin.getName(), 1);
+                    saveTransactionRecord(coin.getName(), tweetList);
+
                     MapUtils.populateMap(map, tweetList, TweetResource::getId);
-                    redisRepository.save(map, hashtag);
+
+                    redisRepository.save(map, coin.getName());
+
                 }
 
             } else {
-                tweetList = scrapingTwitter(hashtag, scrollSize);
-
+                tweetList = scrapingTwitter(coin.getName(), 1);
+                saveTransactionRecord(coin.getName(),tweetList);
                 MapUtils.populateMap(map, tweetList, TweetResource::getId);
-                redisRepository.save(map, hashtag);
+
+                redisRepository.save(map, coin.getName());
             }
         } catch (RestClientResponseException e) {
             throw new BadRequestException(TWITTER_API_ERROR);
         }
         return tweetList;
     }
-
-
 
 
     /**
@@ -75,21 +88,25 @@ public class TwitterService {
     }
 
     private List<TweetResource> scrapingTwitter(String hashtag, Integer scrollSize) {
+
         RestTemplate restTemplate = new RestTemplate();
         String resourceUrl = ConfigLoaderUtil.getProperty("stock-market.nodejs.twitter.uri") + "query-short?query=" + hashtag + "&scroll=" + scrollSize;
+        //String resourceUrl = "http://localhost:8080/test";
         ResponseEntity<List<TweetResource>> tweetResponse;
-
+        Instant start = Instant.now();
         tweetResponse = restTemplate.exchange(resourceUrl,
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<>() {
                 });
+        Instant end = Instant.now();
+
+        LOGGER.info("Scraping Twitter Time : " + Duration.between(start, end));
 
         User user = getCurrentUser();
         user.setLastHashTag(hashtag);
         userRepository.save(user);
 
-        saveTransactionRecord(hashtag);
         List<TweetResource> processedTweetList = tweetResponse.getBody();
 
         if (processedTweetList == null) {
@@ -102,16 +119,20 @@ public class TwitterService {
         return processedTweetList;
     }
 
-    private void saveTransactionRecord(String hashtag) {
+    private void saveTransactionRecord(String hashtag, List<TweetResource> tweetResources) {
         TransactionRecord currentTransaction = transactionRepository.getTransactionRecordByHashtag(hashtag);
         TransactionRecord newTransaction = new TransactionRecord();
 
         if (currentTransaction != null) {
             currentTransaction.setSearchTime(new Date());
+            currentTransaction.setSearchCount(currentTransaction.getSearchCount() + 1);
+            currentTransaction.setScore(calculateScorePointOfTweets(tweetResources));
             transactionRepository.save(currentTransaction);
         } else {
             newTransaction.setHashtag(hashtag);
             newTransaction.setSearchTime(new Date());
+            newTransaction.setSearchCount(1);
+            newTransaction.setScore(calculateScorePointOfTweets(tweetResources));
             transactionRepository.save(newTransaction);
         }
     }
@@ -134,17 +155,29 @@ public class TwitterService {
     }
 
     private List<TweetResource> cleanTweets(List<TweetResource> tweetResource) {
+
         tweetResource.forEach(tweet -> tweet.setText(tweet.getText().trim()
                 // remove links
-                .replace("http.*?[\\S]+", "")
+                .replaceAll("http.*?[\\S]+", "")
                 // remove usernames
-                .replace("@[\\S]+", "")
+                .replaceAll("@[\\S]+", "")
                 // replace hashtags by just words
-                .replace("#", "")
+                .replaceAll("#", "")
+                //delete url in text
+                .replaceAll("(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]", "")
+                //delete usernames
+                .replaceAll("^\\\"@[a-zA-Z]+1\\\"$", "")
                 // correct all multiple white spaces to a single white space
-                .replace("[\\s]+", " ")));
+                .replaceAll("[\\s]+", " ")));
 
         return tweetResource;
+    }
+
+    private Float calculateScorePointOfTweets(List<TweetResource> tweetList) {
+        AtomicReference<Float> score = new AtomicReference<>((float) 0);
+        tweetList.forEach(tweet -> score.updateAndGet(sentiment -> sentiment + tweet.getSentiment()));
+        LOGGER.info("General sentiment score calculated!");
+        return score.get() / tweetList.size();
     }
 }
 

@@ -3,7 +3,7 @@ project:
   version: 0.0.1.ALPHA-RELEASE
 
 server:
-  port: 8080
+  port: 8081
 
 spring:
   jpa:
