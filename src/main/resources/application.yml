@@ -25,8 +25,8 @@ spring:
     transport:
       protocol: smtp
     from:
-      email: burakenesdemirr@gmail.com
-      password: burakenes553409.
+      email: 
+      password: 
     default-encoding: UTF-8
 
 stock-market:
